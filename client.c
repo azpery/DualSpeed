@@ -15,6 +15,32 @@ typedef struct sockaddr_in 	sockaddr_in;
 typedef struct hostent 		hostent;
 typedef struct servent 		servent;
 
+pthread_t threadEcoute; 
+
+static void * ecouteReponse(void * s)
+{
+    int * sock = (int *) s;
+    char buffer[256];
+    int longueur;
+    while(1){
+       memset(buffer, 0, 255);
+       if ((longueur = read(*sock, buffer, sizeof(buffer))) <= 0) {
+              printf("message nul. \n");
+              close(sock);  
+              exit(1);
+       }
+    
+       printf("%s \n", buffer);
+
+       /* mise en attente du prgramme pour simuler un delai de transmission */
+    
+       write(sock,buffer,strlen(buffer)+1);
+    
+    }  
+    close(sock);  
+    return;
+}
+
 int main(int argc, char **argv) {
   
     int 	socket_descriptor, 	/* descripteur de socket */
@@ -47,32 +73,26 @@ int main(int argc, char **argv) {
     bcopy((char*)ptr_host->h_addr, (char*)&adresse_locale.sin_addr, ptr_host->h_length);
     adresse_locale.sin_family = AF_INET; /* ou ptr_host->h_addrtype; */
     
-    /* 2 facons de definir le service que l'on va utiliser a distance */
-    /* (commenter l'une ou l'autre des solutions) */
-    
-    /*-----------------------------------------------------------*/
-    /* SOLUTION 1 : utiliser un service existant, par ex. "irc" */
-    /*
-    if ((ptr_service = getservbyname("irc","tcp")) == NULL) {
-	perror("erreur : impossible de recuperer le numero de port du service desire.");
-	exit(1);
-    }
-    adresse_locale.sin_port = htons(ptr_service->s_port);
-    */
-    /*-----------------------------------------------------------*/
-    
-    /*-----------------------------------------------------------*/
-    /* SOLUTION 2 : utiliser un nouveau numero de port */
+
     adresse_locale.sin_port = htons(5000);
     /*-----------------------------------------------------------*/
     
     
     printf("numero de port pour la connexion au serveur : %d \n", ntohs(adresse_locale.sin_port));
     
-    /* creation de la socket */
+    /* creation de la socket d'écoute */
     if ((socket_descriptor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 	perror("erreur : impossible de creer la socket de connexion avec le serveur.");
 	exit(1);
+    }
+
+    /* Démarrage du thread d'écoute*/
+    pthread_create(&threadEcoute, NULL, ecouteReponse, &socket_descriptor);
+
+    /* creation de la socket */
+    if ((socket_descriptor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    perror("erreur : impossible de creer la socket de connexion avec le serveur.");
+    exit(1);
     }
     
     /* tentative de connexion au serveur dont les infos sont dans adresse_locale */
@@ -96,16 +116,13 @@ int main(int argc, char **argv) {
        }
     
        /* mise en attente du prgramme pour simuler un delai de transmission */
-     
-       printf("message envoye au serveur. \n");
-                
+                     
        /* lecture de la reponse en provenance du serveur */
        //while((longueur = read(socket_descriptor, buffer, sizeof(buffer))) > 0) {
 	       //printf("reponse du serveur : \n");
 	       //write(1,buffer,longueur);
        //}
     
-       printf("\nfin de la reception.\n");
     }
     
     close(socket_descriptor);
@@ -115,3 +132,4 @@ int main(int argc, char **argv) {
     exit(0);
     
 }
+

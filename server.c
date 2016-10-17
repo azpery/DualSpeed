@@ -17,38 +17,58 @@ typedef struct sockaddr_in sockaddr_in;
 typedef struct hostent hostent;
 typedef struct servent servent;
 
-pthread_t threads[TAILLE_MAX_CLIENT]; 
+typedef struct{
+    int sock;               /*socket du client*/
+    char pseudo[50];        /*pseudo du client*/
+    pthread_t thread;       /*thread du serveur auquel est affecté le client*/
+    int connected;         /*booléen indiquant si le client est connecté ou non*/
+} Client;
+
+Client threads[TAILLE_MAX_CLIENT]; 
 
 int nbClientCo = 0;
 
+void broadCastMessage(char msg[256]){
+  int i = 0;
+  for (i; i < sizeof(threads)/sizeof(threads[0]); ++i)
+  {
+      if (threads[i].connected = 1)
+      {
+        write(threads[i].sock, msg,strlen(msg)+1);
+      }
+  }
+
+}
+
 /*------------------------------------------------------*/
-static void * renvoi (void * s) {
-    int * sock = (int *) s;
+static void * newClient (void * s) {
+    Client * client = (Client *) s;
+    int sock = (*client).sock;
     char buffer[256];
+    char retour[256];
     int longueur;
     while(1){
        memset(buffer, 0, 255);
-       printf("écoute du message.\n");
-       if ((longueur = read(*sock, buffer, sizeof(buffer))) <= 0) {
+       memset(retour, 0, 255);
+       if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) {
               printf("message nul. \n");
     	       return;
        }
     
-       printf("message lu : %s \n", buffer);
+       sprintf(retour,"%s a dit: %s \n",(*client).pseudo, buffer);
 
-    
-       printf("renvoi du message traite.\n");
+       printf("%s\n", retour);
 
        /* mise en attente du prgramme pour simuler un delai de transmission */
+      broadCastMessage(retour);
+       //write(sock,retour,strlen(retour)+1);
     
-       write(sock,buffer,strlen(buffer)+1);
-    
-       printf("message envoye. \n");
     }  
     close(sock);  
     return;
     
 }
+
 /*------------------------------------------------------*/
 
 /*------------------------------------------------------*/
@@ -91,8 +111,8 @@ main(int argc, char **argv) {
 
     /* association du socket socket_descriptor à la structure d'adresse adresse_locale */
     if ((bind(socket_descriptor, (sockaddr*)(&adresse_locale), sizeof(adresse_locale))) < 0) {
-		perror("erreur : impossible de lier la socket a l'adresse de connexion.");
-		exit(1);
+		  perror("erreur : impossible de lier la socket a l'adresse de connexion.");
+		  exit(1);
     }
     
     /* initialisation de la file d'ecoute */
@@ -112,13 +132,26 @@ main(int argc, char **argv) {
 			perror("erreur : impossible d'accepter la connexion avec le client.");
 			exit(1);
 		}
+
+    threads[nbClientCo].sock = nouv_socket_descriptor;
+    threads[nbClientCo].connected = 1;
+    sprintf(threads[nbClientCo].pseudo, "joueur %d", nouv_socket_descriptor);
 		printf("Démarrage connection avec un nouveau client \n");
-		pthread_create(&threads[nbClientCo], NULL, renvoi, &nouv_socket_descriptor);
+		pthread_create(&threads[nbClientCo].thread, NULL, newClient, &threads[nbClientCo]);
 		nbClientCo++;
 		
 		
     }
 
     
+}
+
+char * concat(const char *s1, const char *s2)
+{
+    char *result = malloc(strlen(s1)+strlen(s2)+1);//+1 for the zero-terminator
+    //in real code you would check for errors in malloc here
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
 }
 
