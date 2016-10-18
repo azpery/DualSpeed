@@ -8,6 +8,8 @@ Serveur à lancer avant le client
 #include <netdb.h> /* pour hostent, servent */ 
 #include <string.h> /* pour bcopy, ... */ 
 #include <pthread.h> 
+#include </comptes/E158592H/Documents/M1/Réseau/xml.c/src/xml.h>
+
 #define TAILLE_MAX_NOM 256
 
 # define TAILLE_MAX_CLIENT 256
@@ -18,10 +20,19 @@ typedef struct hostent hostent;
 typedef struct servent servent;
 
 typedef struct {
+  int id;
+  char question[256];
+  char rep[256];
+  char sugg[4][256];
+}
+Question;
+
+typedef struct {
   int sock; /*socket du client*/
   char pseudo[50]; /*pseudo du client*/
   pthread_t thread; /*thread du serveur auquel est affecté le client*/
   int connected; /*booléen indiquant si le client est connecté ou non*/
+  int score;
 }
 Client;
 
@@ -31,6 +42,7 @@ int socket_descriptor; /* descripteur de socket */
 pthread_t threadCmd;
 
 int nbClientCo = 0;
+Question quizz[5];
 
 int broadCastMessage(char msg[256]) {
   int i = 0;
@@ -109,6 +121,37 @@ static void * newClient(void * s) {
 
 }
 
+void readFile(){
+  const char s[2] = "|";
+  int compteur = 0;
+  const char sep[2] = ";";
+  char *token;
+  FILE *file;
+  char * line = NULL;
+  size_t len = 0;
+  ssize_t read;
+  file = fopen("test.txt", "r");
+  if (file == NULL)
+        exit(EXIT_FAILURE);
+
+    while ((read = getline(&line, &len, file)) != -1) {
+
+      token = strtok(line, s);
+      Question q;
+      q.id = compteur;
+      // q.question = token;
+
+      // token = strtok(NULL, s);
+
+      // printf( " %s\n", token );
+
+        
+      compteur++;
+    }
+
+    fclose(file);
+  }
+
 /*------------------------------------------------------*/
 
 /*------------------------------------------------------*/
@@ -157,7 +200,7 @@ main(int argc, char * * argv) {
   listen(socket_descriptor, 5);
 
   pthread_create( & threadCmd, NULL, serverAction, NULL);
-
+  readFile();
   /* attente des connexions et traitement des donnees recues */
   while (1) {
 
@@ -176,6 +219,7 @@ main(int argc, char * * argv) {
     sprintf(threads[nbClientCo].pseudo, "joueur %d", nouv_socket_descriptor);
     printf("Démarrage connection avec un nouveau client \n");
     pthread_create( & threads[nbClientCo].thread, NULL, newClient, & threads[nbClientCo]);
+
     nbClientCo++;
 
   }
