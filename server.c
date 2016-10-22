@@ -8,7 +8,6 @@ Serveur à lancer avant le client
 #include <netdb.h> /* pour hostent, servent */ 
 #include <string.h> /* pour bcopy, ... */ 
 #include <pthread.h> 
-#include </comptes/E158592H/Documents/M1/Réseau/xml.c/src/xml.h>
 
 #define TAILLE_MAX_NOM 256
 
@@ -60,11 +59,29 @@ int broadCastMessage(char msg[256]) {
 
 }
 
+  void printQuizz(){
+    int i = 0;
+    int j = 0;
+    for (i; i < sizeof(quizz) / sizeof(quizz[0]); i++) {
+      if (quizz[i].id > 0) {
+        j=0;
+        printf("Question n°%d\n question:%s\n reponses:%s\n sugestions:",quizz[i].id, quizz[i].question, quizz[i].sugg[0]);
+        for (j; j < sizeof(quizz[i].sugg) / sizeof(quizz[i].sugg[0]); j++)
+        {
+          if (quizz[i].sugg[j] != NULL)
+          {
+            printf("%s\n", quizz[i].sugg[j]);
+          }
+        }
+      }
+    }
+  }
+
 void closeConnections() {
   int i = 0;
   broadCastMessage("q");
   for (i; i < sizeof(threads) / sizeof(threads[0]); ++i) {
-    if (threads[i].connected = 1) {
+    if (threads[i].connected == 1) {
       close(threads[i].sock);
     }
   }
@@ -86,6 +103,9 @@ static void * serverAction() {
     mesg[strcspn(mesg, "\n")] = '\0';
     if (mesg[0] == 'q') {
       closeConnections();
+    }else if (mesg[0] == '1')
+    {
+      printQuizz();
     } else {
       sprintf(retour, "Le serveur a dit: %s \n", mesg);
       if ((broadCastMessage(retour)) < 0) {
@@ -121,36 +141,42 @@ static void * newClient(void * s) {
 
 }
 
-void readFile(){
-  const char s[2] = "|";
-  int compteur = 0;
-  const char sep[2] = ";";
-  char *token;
-  FILE *file;
-  char * line = NULL;
-  size_t len = 0;
-  ssize_t read;
-  file = fopen("test.txt", "r");
-  if (file == NULL)
-        exit(EXIT_FAILURE);
-
+  void readFile(){
+    const char s[2] = "|";
+    int compteur = 1;
+    int i = 0;
+    const char sep[2] = ";";
+    char * reponses;
+    char *token;
+    FILE *file;
+    char * newLine;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    file = fopen("test.txt", "r");
+    if (file == NULL)
+      exit(EXIT_FAILURE);
+    Question q;
     while ((read = getline(&line, &len, file)) != -1) {
-
-      token = strtok(line, s);
-      Question q;
-      q.id = compteur;
-      // q.question = token;
-
-      // token = strtok(NULL, s);
-
-      // printf( " %s\n", token );
-
-        
+      i = 0;
+      newLine = line;
+      token = strtok(newLine, s);
+      quizz[compteur -1].id = compteur;
+      sprintf(quizz[compteur - 1].question, "%s", token);
+      token = strtok(NULL, s);
+      token = strtok(token, sep);
+      sprintf(quizz[compteur - 1].rep, "%s", token);
+      while(token!= NULL){
+        sprintf(quizz[compteur - 1].sugg[i], "%s", token);
+        token = strtok(NULL, sep);
+        i++;
+      }
       compteur++;
     }
-
     fclose(file);
   }
+
+
 
 /*------------------------------------------------------*/
 
