@@ -2,13 +2,16 @@
 Client a lancer apres le serveur avec la commande :
 client <adresse-serveur> <message-a-transmettre>
 ------------------------------------------------------------*/
+
 #include <stdlib.h> 
-#include <stdio.h> 
+#include <stdio.h>
+#include <time.h> 
 #include <linux/types.h> 
 #include <sys/socket.h> 
 #include <netdb.h> 
 #include <string.h> 
 #include <pthread.h>
+#include <stdbool.h>
 
 typedef struct sockaddr sockaddr;
 typedef struct sockaddr_in sockaddr_in;
@@ -17,6 +20,9 @@ typedef struct servent servent;
 
 pthread_t threadEcoute;
 int socket_descriptor;
+
+struct timespec specstart;
+struct timespec specend;
 
 void closeConnection() {
   printf("fermeture de la connexion avec le serveur");
@@ -35,10 +41,11 @@ static void * ecouteReponse(void * s) {
       close(sock);
       exit(1);
     }
-    if(strcmp(buffer,"q") == 0){
+    if(buffer[0]=='q' && buffer[1]=='\n'){
       closeConnection();
     }
     printf("%s \n", buffer);
+    clock_gettime(CLOCK_REALTIME, &specstart);
   }
   close(sock);
   return;
@@ -47,18 +54,38 @@ static void * ecouteReponse(void * s) {
 void clientAction(){
   char mesg[256]; /* message envoyé */
   while (1) {
+
     memset(mesg,0, 255);
     fgets(mesg, sizeof(mesg), stdin);
+    if (mesg[0]=='\n'){
+        clock_gettime(CLOCK_REALTIME, &specend);
+        double end = specend.tv_sec;
+        double start = specstart.tv_sec;
+        double endns = specend.tv_nsec;
+        double startns = specstart.tv_nsec;
+        double diff = end - start;
+        printf("%lf\n", diff);
+        double diffns = endns - startns;
+        printf("%lf\n", diffns);
+        sprintf(mesg ,"|| %lf seconds || %lf nanoseconds", diff, diffns);
+        puts(mesg);
+    }
+
     /* envoi du message vers le serveur */
     if ((write(socket_descriptor, mesg, strlen(mesg))) < 0) {
       perror("erreur : impossible d'ecrire le message destine au serveur.");
       exit(1);
     }
+
+        if (mesg[0]=='q' && mesg[1]=='\n'){
+        closeConnection();
+    }
+
   }
 }
 
 int main(int argc, char * * argv) {
-
+    clock_gettime(CLOCK_REALTIME, &specstart);
   int  longueur; /* longueur d'un buffer utilisé */
   sockaddr_in adresse_locale; /* adresse de socket local */
   hostent * ptr_host; /* info sur une machine hote */
@@ -114,6 +141,7 @@ int main(int argc, char * * argv) {
   }
 
   printf("connexion etablie avec le serveur. \n");
+
 
   clientAction();
 

@@ -44,6 +44,24 @@ pthread_t threadCmd; //Thread de commande, permet d'écouter les interactions su
 int nbClientCo = 0; 
 Question quizz[255]; //Tableau des questions
 
+unsigned int randint( unsigned int max)
+{
+    int r;
+    unsigned int min = 1;
+    const unsigned int range = 1 + max - min;
+    const unsigned int buckets = RAND_MAX / range;
+    const unsigned int limit = buckets * range;
+
+    /* Create equal size buckets all in a row, then fire randomly towards
+     * the buckets until you land in one of them. All buckets are equally
+     * likely. If you land off the end of the line of buckets, try again. */
+    do
+    {
+        r = rand();
+    } while (r >= limit);
+
+    return min + (r / buckets);
+}
 
 /********************************************/
 /***********Envoie un message à tous les*****/
@@ -106,8 +124,7 @@ Question getRandomQuestion(int *questionsAsked, int nbOfQuestionsAsked){
   Question q = { 0, "", ""};;
   int r;
   while(q.id == 0){
-    srand(time(NULL));
-    r = rand() % countNumberOfQuestions();
+    r = randint(countNumberOfQuestions()) - 1;
     if (!isValueInArray(r + 1, questionsAsked, countNumberOfQuestions()))
     {
       q = quizz[r];
@@ -120,11 +137,10 @@ Question getRandomQuestion(int *questionsAsked, int nbOfQuestionsAsked){
 char * getRandomSuggestion(Question question, int *suggestionsAsked, int nbOfSuggestionsAsked){
   char * q;
   bool found = false;
-  int r;
+  int r = 0;
   while(!found){
-    srand(time(NULL));
-    r = rand() % countNumberOfSuggestion(question);
-
+    r = randint(countNumberOfSuggestion(question)) - 1;
+    printf("%d\n", r);
     if (!isValueInArray(r + 1, suggestionsAsked, 4))
     {
       found = true;
