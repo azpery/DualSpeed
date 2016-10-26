@@ -86,6 +86,22 @@ int countNumberOfQuestions(){
   return vretour++;
 }
 
+/**********************************************/
+/****Retourne le nombre de suggestion****/
+/*********************************************/
+int countNumberOfSuggestion(Question q){
+  int i = 0;
+  int vretour = 0;
+  for (i; i < sizeof(q.sugg) / sizeof(q.sugg[0]); i++)
+  {
+    if (q.sugg[i] != NULL)
+    {
+      vretour++;
+    }
+  }
+  return vretour;
+}
+
 Question getRandomQuestion(int *questionsAsked, int nbOfQuestionsAsked){
   Question q = { 0, "", ""};;
   int r;
@@ -101,7 +117,25 @@ Question getRandomQuestion(int *questionsAsked, int nbOfQuestionsAsked){
   return q;
 }
 
-/**********************************************/
+char * getRandomSuggestion(Question question, int *suggestionsAsked, int nbOfSuggestionsAsked){
+  char * q;
+  bool found = false;
+  int r;
+  while(!found){
+    srand(time(NULL));
+    r = rand() % countNumberOfSuggestion(question);
+
+    if (!isValueInArray(r + 1, suggestionsAsked, 4))
+    {
+      found = true;
+      q = question.sugg[r];
+      suggestionsAsked[nbOfSuggestionsAsked + 1] = r + 1;
+    }
+  }
+  return q;
+}
+
+/*********************************************/
 /****Affiche toutes les questions chargées****/
 /*********************************************/
 void printQuizz(){
@@ -217,12 +251,24 @@ void playGame(){
   int scoreMax = 0;
   bool hasWinner = false;
   int questionsAsked[countNumberOfQuestions()];
+  char * suggestion;
   int i = 0;
+  int j = 0;
+  int ok = 0;
   Question currentQuestion;
-  for (i; i < countNumberOfQuestions(); ++i){
+  for (i; i < countNumberOfQuestions(); i++){
     currentQuestion = getRandomQuestion(questionsAsked, i);
-    printf("%s\n", currentQuestion.question);
-    sleep(2);
+    ok = broadCastMessage(currentQuestion.question);
+    j = 0;
+    int suggestionsAsked[countNumberOfSuggestion(currentQuestion)];
+    memset(suggestionsAsked, 0, countNumberOfSuggestion(currentQuestion));
+    for (j; j < countNumberOfSuggestion(currentQuestion); j++)
+    {
+      suggestion = getRandomSuggestion(currentQuestion, suggestionsAsked, j);
+      ok = broadCastMessage(suggestion);
+      sleep(2);
+    }
+   
   }
 }
 
@@ -258,6 +304,9 @@ static void * serverAction() {
         break; 
       case 'b':
         playGame();
+        break;  
+      case '2':
+        readFile();
         break;  
       default : 
         sprintf(retour, "Le serveur a dit: %s \n", mesg);
