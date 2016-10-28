@@ -1,4 +1,4 @@
-quel est la taille de la tour eiffel?|300m;1000m;45020
-quel estla taille de ma télévision?|30cm;40cm;50cm
-quel est la couleur du cheval blanc d'henry 4?|blanc;noir;vert;jaune
-quel est la capital de la france?|Paris;Bamako;Lima;Ouagadougou
+Quelle est la taille de la tour eiffel?|300m;1000m;45020
+quelle est la taille de ma télévision?|30cm;40cm;50cm
+quelle est la couleur du cheval blanc d'henry 4?|blanc;noir;vert;jaune
+quelle est la capitale de la france?|Paris;Bamako;Lima;Ouagadougou

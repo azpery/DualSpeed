@@ -31,7 +31,8 @@ Question;
 
 typedef struct {
   int sock; /*socket du client*/
-  char pseudo[50]; /*pseudo du client*/
+  char pseudo[256]; /*pseudo du client*/
+  int pseudo_setted;
   pthread_t thread; /*thread du serveur auquel est affecté le client*/
   int connected; /*booléen indiquant si le client est connecté ou non*/
   int score;
@@ -236,7 +237,11 @@ void getWinner(){
       retour = concat(retour, pouet);
     }
   }
+  i=0;
   sprintf(pouet, "****WINNER*****\n %s a gagné\n", win.pseudo);
+  for(i; i < sizeof(threads) / sizeof(threads[0]); ++i){
+    threads[i].score = 0;
+  }
   retour = concat(pouet, retour);
   broadCastMessage(retour);
 }
@@ -253,6 +258,39 @@ static void * newClient(void * s) {
   double myTime=0.0;
   const char sut[2] = "||";
   int longueur;
+  // Si le client n'a pas customisé son pseudonyme on en lui demande un
+  if ( (* client).pseudo_setted <= 0){
+    char msg[256];
+    sprintf(msg, "Veuillez donner votre pseudonyme\n");
+    write(sock, msg, strlen(msg) + 1);
+    while(1){
+      bool already = false;
+      memset(buffer, 0, 255);
+      memset(retour, 0, 255);
+      if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) {
+        printf("message nul. \n");
+        close(sock);
+        return;
+      }
+      strtok(buffer, "\n");
+      int i = 0;
+      //On vérifié qu'un autre utilisateur n'a pas donné ce pseudonyme
+      for(i; i < sizeof(threads) / sizeof(threads[0]); ++i){
+        if(strcmp(threads[i].pseudo,buffer) == 0){
+          already = true;
+        }
+      }
+      //Si le traitement appliqué a été celui d'une réaction a une suggestion (affichage temps) ou le pseudonyme est déjà pris
+      if((strstr(buffer, "|")) || already == true){
+        sprintf(msg, "Pseudonyme invalide\n");
+        write(sock, msg, strlen(msg) + 1);
+      }else {
+        sprintf(( * client).pseudo, buffer);
+        (* client).pseudo_setted = 1;
+        break;
+      }
+    }
+  }
   while (1) {
     memset(buffer, 0, 255);
     memset(retour, 0, 255);
@@ -386,6 +424,8 @@ void printMenu(char mesg[256]) {
 static void * serverAction() {
   char mesg[256]; /* message à envoyé */
   char retour[256]; 
+  int i;
+  int compteur;
   while (1) {
     memset(mesg, 0, 255);
     memset(retour, 0, 255);
@@ -400,7 +440,16 @@ static void * serverAction() {
         closeConnections();
         break; 
       case 'b':
-        playGame();
+        i = 0;
+        compteur = 0;
+        for (i; i < sizeof(threads) / sizeof(threads[0]); ++i) { 
+          if (threads[i].pseudo_setted > 0){
+            compteur++;
+          }
+        }
+        if (compteur >= 2){
+          playGame();
+        }
         break;  
       case '2':
         readFile();
@@ -465,6 +514,7 @@ main(int argc, char * * argv) {
       exit(1);
     }
     threads[nbClientCo].sock = nouv_socket_descriptor;
+    threads[nbClientCo].pseudo_setted = 0;
     threads[nbClientCo].connected = 1;
     sprintf(threads[nbClientCo].pseudo, "joueur %d", nouv_socket_descriptor);
     printf("Démarrage connection avec un nouveau client \n");
