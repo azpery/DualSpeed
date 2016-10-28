@@ -43,6 +43,9 @@ int socket_descriptor; /* descripteur de socket */
 pthread_t threadCmd; //Thread de commande, permet d'écouter les interactions sur le serveur
 int nbClientCo = 0; 
 Question quizz[255]; //Tableau des questions
+double mintime;
+Client * winner;
+Question currentQuestion;
 
 unsigned int randint( unsigned int max)
 {
@@ -104,6 +107,15 @@ int countNumberOfQuestions(){
   return vretour++;
 }
 
+char* concat(const char *s1, const char *s2)
+{
+    char *result = malloc(strlen(s1)+strlen(s2)+1);//+1 for the zero-terminator
+    //in real code you would check for errors in malloc here
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
+
 /**********************************************/
 /****Retourne le nombre de suggestion****/
 /*********************************************/
@@ -112,7 +124,7 @@ int countNumberOfSuggestion(Question q){
   int vretour = 0;
   for (i; i < sizeof(q.sugg) / sizeof(q.sugg[0]); i++)
   {
-    if (q.sugg[i] != NULL)
+    if (q.sugg[i] != NULL  && strcmp(q.sugg[i], "") != 0)
     {
       vretour++;
     }
@@ -140,14 +152,17 @@ char * getRandomSuggestion(Question question, int *suggestionsAsked, int nbOfSug
   int r = 0;
   while(!found){
     r = randint(countNumberOfSuggestion(question)) - 1;
-    printf("%d\n", r);
     if (!isValueInArray(r + 1, suggestionsAsked, 4))
     {
-      found = true;
       q = question.sugg[r];
-      suggestionsAsked[nbOfSuggestionsAsked + 1] = r + 1;
+      if (strcmp(q, "") != 0)
+      {
+        found = true;
+        suggestionsAsked[nbOfSuggestionsAsked + 1] = r + 1;
+      }
     }
   }
+  strtok(q, "\n");
   return q;
 }
 
@@ -181,15 +196,49 @@ void closeConnections() {
   broadCastMessage("q");
   for (i; i < sizeof(threads) / sizeof(threads[0]); ++i) {
     if (threads[i].connected == 1) {
-      close(threads[i].sock);
+      printf("Fermeture de la co avec %s, état :%d\n", threads[i].pseudo, close(threads[i].sock));
     }
   }
+  sleep(3);
   if (close(socket_descriptor) < 0) {
     printf("Le socket du serveur ne s'est pas fermé.\n");
   } else {
-    exit(0);
+    printf("Le socket du serveur s'est fermé.\n");
+    exit(1);
   }
 
+}
+
+int getMaxScore(){
+  int vretour = 0;
+  int i = 0;
+  for (i; i < sizeof(threads) / sizeof(threads[0]); ++i) {
+    if (threads[i].connected == 1 && threads[i].score > vretour) {
+      vretour = threads[i].score;
+    }
+  }
+  return vretour;
+}
+
+
+void getWinner(){
+  Client win = {0};
+  char * retour = concat("","");
+  char pouet[256];
+  int i = 0;
+  for (i; i < sizeof(threads) / sizeof(threads[0]); ++i) {
+    if (threads[i].connected == 1) {
+      if ( threads[i].score > win.score)
+      {
+        win = threads[i];
+      }
+      sprintf(pouet,"|%s|score: %d|\n", threads[i].pseudo, threads[i].score);
+      retour = concat(retour, pouet);
+    }
+  }
+  sprintf(pouet, "****WINNER*****\n %s a gagné\n", win.pseudo);
+  retour = concat(pouet, retour);
+  broadCastMessage(retour);
 }
 
 /********************************************************/
@@ -198,8 +247,11 @@ void closeConnections() {
 static void * newClient(void * s) {
   Client * client = (Client * ) s;
   int sock = ( * client).sock;
+  ( * client).score = 0;
   char buffer[256];
   char retour[256];
+  double myTime=0.0;
+  const char sut[2] = "||";
   int longueur;
   while (1) {
     memset(buffer, 0, 255);
@@ -213,12 +265,26 @@ static void * newClient(void * s) {
       close(sock);
       sprintf(retour, "%s a quitté la partie.", ( * client).pseudo);
       printf("%s\n", retour);
-      broadCastMessage(retour);
+      //broadCastMessage(retour);
       return;
     }
-    sprintf(retour, "%s a dit: %s \n", ( * client).pseudo, buffer);
-    printf("%s\n", retour);
-    broadCastMessage(retour);
+    sscanf(strtok(buffer, sut) , "%lf", &myTime);
+    // sprintf(retour, "%s a dit: %s \n", ( * client).pseudo, buffer);
+    if (myTime < mintime || mintime == 0)
+    {
+      if (strcmp(strtok(NULL, sut), currentQuestion.rep) == 0)
+      {
+        mintime = myTime;
+        winner = client;
+      }else{
+        sprintf(retour, "MAUVAISE REPONSE %s perd un point\n", ( * client).pseudo);
+        ( * client).score--;
+        broadCastMessage(retour);
+      }
+    }
+    printf("%s a réagi en : %lf\n",( * client).pseudo, myTime);
+    printf("msg:%s\n", buffer);
+    // broadCastMessage(retour);
   }
   close(sock);
   return;
@@ -268,24 +334,39 @@ void playGame(){
   bool hasWinner = false;
   int questionsAsked[countNumberOfQuestions()];
   char * suggestion;
+  char retour[256];
   int i = 0;
   int j = 0;
   int ok = 0;
-  Question currentQuestion;
   for (i; i < countNumberOfQuestions(); i++){
+    if (getMaxScore() >= 5)
+    {
+      break;
+    }
     currentQuestion = getRandomQuestion(questionsAsked, i);
     ok = broadCastMessage(currentQuestion.question);
+    sleep(1);
     j = 0;
     int suggestionsAsked[countNumberOfSuggestion(currentQuestion)];
     memset(suggestionsAsked, 0, countNumberOfSuggestion(currentQuestion));
     for (j; j < countNumberOfSuggestion(currentQuestion); j++)
     {
+      mintime = 0;
       suggestion = getRandomSuggestion(currentQuestion, suggestionsAsked, j);
       ok = broadCastMessage(suggestion);
-      sleep(2);
+      sleep(4);
+      if (mintime>0)
+      {
+        sprintf(retour,"%s a été le plus rapide\n", ( * winner).pseudo);
+        broadCastMessage(retour);
+        sleep(1);
+        j = countNumberOfSuggestion(currentQuestion);
+        ( * winner).score++;
+      }
     }
-   
   }
+  sleep(2);
+  getWinner();
 }
 
 void printMenu(char mesg[256]) {
@@ -355,7 +436,7 @@ main(int argc, char * * argv) {
   bcopy((char *)ptr_hote->h_addr, (char * ) & adresse_locale.sin_addr, ptr_hote->h_length);
   adresse_locale.sin_family = ptr_hote->h_addrtype; /* ou AF_INET */
   adresse_locale.sin_addr.s_addr = INADDR_ANY; /* ou AF_INET */
-  adresse_locale.sin_port = htons(5000);
+  adresse_locale.sin_port = htons(5001);
   printf("numero de port pour la connexion au serveur : %d \n",
     ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/ );
   /* creation de la socket */
@@ -366,6 +447,7 @@ main(int argc, char * * argv) {
   /* association du socket socket_descriptor à la structure d'adresse adresse_locale */
   if ((bind(socket_descriptor, (sockaddr * )( & adresse_locale), sizeof(adresse_locale))) < 0) {
     perror("erreur : impossible de lier la socket a l'adresse de connexion.");
+    close(socket_descriptor);
     exit(1);
   }
   /* initialisation de la file d'ecoute */

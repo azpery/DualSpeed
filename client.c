@@ -20,6 +20,7 @@ typedef struct servent servent;
 
 pthread_t threadEcoute;
 int socket_descriptor;
+char reponse[256];
 
 struct timespec specstart;
 struct timespec specend;
@@ -38,13 +39,14 @@ static void * ecouteReponse(void * s) {
     memset(buffer, 0, 255);
     if ((longueur = read( * sock, buffer, sizeof(buffer))) <= 0) {
       printf("message nul. \n");
-      close(sock);
+      closeConnection();
       exit(1);
     }
     if(buffer[0]=='q' && buffer[1]=='\n'){
       closeConnection();
     }
     printf("%s \n", buffer);
+    sprintf(reponse, "%s", buffer);
     clock_gettime(CLOCK_REALTIME, &specstart);
   }
   close(sock);
@@ -64,11 +66,13 @@ void clientAction(){
         double endns = specend.tv_nsec;
         double startns = specstart.tv_nsec;
         double diff = end - start;
-        printf("%lf\n", diff);
         double diffns = endns - startns;
-        printf("%lf\n", diffns);
-        sprintf(mesg ,"|| %lf seconds || %lf nanoseconds", diff, diffns);
-        puts(mesg);
+        if (diffns < 0)
+        {
+            diffns = 1000000000 - diffns;
+        }
+        sprintf(mesg ,"%d.%d||%s", (int) diff, (int) diffns, reponse);
+        //puts(mesg);
     }
 
     /* envoi du message vers le serveur */
@@ -114,7 +118,7 @@ int main(int argc, char * * argv) {
   bcopy((char * ) ptr_host->h_addr, (char * ) & adresse_locale.sin_addr, ptr_host->h_length);
   adresse_locale.sin_family = AF_INET; /* ou ptr_host->h_addrtype; */
 
-  adresse_locale.sin_port = htons(5000);
+  adresse_locale.sin_port = htons(5001);
   /*-----------------------------------------------------------*/
 
   printf("numero de port pour la connexion au serveur : %d \n", ntohs(adresse_locale.sin_port));
