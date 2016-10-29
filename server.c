@@ -32,7 +32,6 @@ Question;
 typedef struct {
   int sock; /*socket du client*/
   char pseudo[256]; /*pseudo du client*/
-  int pseudo_setted;
   pthread_t thread; /*thread du serveur auquel est affecté le client*/
   int connected; /*booléen indiquant si le client est connecté ou non*/
   int score;
@@ -259,7 +258,7 @@ static void * newClient(void * s) {
   const char sut[2] = "||";
   int longueur;
   // Si le client n'a pas customisé son pseudonyme on en lui demande un
-  if ( (* client).pseudo_setted <= 0){
+  if ( (* client).connected <= 0){
     char msg[256];
     sprintf(msg, "Veuillez donner votre pseudonyme\n");
     write(sock, msg, strlen(msg) + 1);
@@ -286,7 +285,7 @@ static void * newClient(void * s) {
         write(sock, msg, strlen(msg) + 1);
       }else {
         sprintf(( * client).pseudo, buffer);
-        (* client).pseudo_setted = 1;
+        (* client).connected = 1;
         break;
       }
     }
@@ -303,6 +302,7 @@ static void * newClient(void * s) {
       close(sock);
       sprintf(retour, "%s a quitté la partie.", ( * client).pseudo);
       printf("%s\n", retour);
+      (* client).connected = -1;
       //broadCastMessage(retour);
       return;
     }
@@ -443,12 +443,14 @@ static void * serverAction() {
         i = 0;
         compteur = 0;
         for (i; i < sizeof(threads) / sizeof(threads[0]); ++i) { 
-          if (threads[i].pseudo_setted > 0){
+          if (threads[i].connected > 0){
             compteur++;
           }
         }
         if (compteur >= 2){
           playGame();
+        }else {
+          printf("Pas assez de joueurs (minimum deux)\n");
         }
         break;  
       case '2':
@@ -514,8 +516,6 @@ main(int argc, char * * argv) {
       exit(1);
     }
     threads[nbClientCo].sock = nouv_socket_descriptor;
-    threads[nbClientCo].pseudo_setted = 0;
-    threads[nbClientCo].connected = 1;
     sprintf(threads[nbClientCo].pseudo, "joueur %d", nouv_socket_descriptor);
     printf("Démarrage connection avec un nouveau client \n");
     pthread_create( & threads[nbClientCo].thread, NULL, newClient, & threads[nbClientCo]);
