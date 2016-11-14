@@ -44,6 +44,7 @@ pthread_t threadCmd; //Thread de commande, permet d'écouter les interactions su
 int nbClientCo = 0; 
 Question quizz[255]; //Tableau des questions
 double mintime;
+int gameStarted = 0;
 Client * winner;
 Question currentQuestion;
 
@@ -51,19 +52,24 @@ unsigned int randint( unsigned int max)
 {
     int r;
     unsigned int min = 1;
-    const unsigned int range = 1 + max - min;
-    const unsigned int buckets = RAND_MAX / range;
-    const unsigned int limit = buckets * range;
-
-    /* Create equal size buckets all in a row, then fire randomly towards
-     * the buckets until you land in one of them. All buckets are equally
-     * likely. If you land off the end of the line of buckets, try again. */
-    do
-    {
-        r = rand();
-    } while (r >= limit);
-
-    return min + (r / buckets);
+    int i= 0;
+    int j= 0;
+    int *res = malloc(sizeof(int)*(max-min));
+    srand(time(NULL));
+    for (i; i < (max -min)+1; i++){
+        int r = rand()%max + min;
+        int dup = 0;
+        for (j = 0; j < (max -min)+1; j++){
+            if (res[j] == r){
+                i--;
+                dup = 1;
+                break;
+            }
+        }
+        if (!dup)
+            res[i] = r;
+    }
+    return *res;
 }
 
 /********************************************/
@@ -82,6 +88,18 @@ int broadCastMessage(char msg[256]) {
     }
   }
   return vreturn;
+}
+/******************************************************************/
+/************Initialisation des scores des joueurs à 0*************/
+/******************************************************************/
+void initScore(){
+  int i = 0;
+  int vreturn = 0;
+  for (i; i < sizeof(threads) / sizeof(threads[0]); ++i) { //Parcours detous les utilisateurs
+    if (threads[i].connected == 1) {
+      threads[i].score = 0;
+    }
+  }
 }
 
 bool isValueInArray(int val, int *arr, int size){
@@ -301,30 +319,37 @@ static void * newClient(void * s) {
       close(sock);
       return;
     }
+    sprintf(retour, "%s", buffer);
     if (buffer[0] == 'q') {
       close(sock);
       sprintf(retour, "%s a quitté la partie.", ( * client).pseudo);
       printf("%s\n", retour);
       (* client).connected = -1;
-      //broadCastMessage(retour);
+      sprintf(( * client).pseudo, "");
       return;
-    }
-    sscanf(strtok(buffer, sut) , "%lf", &myTime);
-    // sprintf(retour, "%s a dit: %s \n", ( * client).pseudo, buffer);
-    if (myTime < mintime || mintime == 0)
-    {
-      if (strcmp(strtok(NULL, sut), currentQuestion.rep) == 0)
+    }else if(gameStarted == 0){
+      sprintf(retour, "%s a dit:%s", ( * client).pseudo, buffer);
+      printf("%s\n", retour);
+      broadCastMessage(retour);
+    }else if(strstr(buffer, sut) != NULL){
+      sscanf(strtok(buffer, sut) , "%lf", &myTime);
+      // sprintf(retour, "%s a dit: %s \n", ( * client).pseudo, buffer);
+      if (myTime < mintime || mintime == 0)
       {
-        mintime = myTime;
-        winner = client;
-      }else{
-        sprintf(retour, "MAUVAISE REPONSE %s perd un point\n", ( * client).pseudo);
-        ( * client).score--;
-        broadCastMessage(retour);
+        //printf("dd%s\n", retour);
+        if (strcmp(strtok(NULL, sut), currentQuestion.rep) == 0)
+        {
+          mintime = myTime;
+          winner = client;
+        }else{
+          sprintf(retour, "MAUVAISE REPONSE %s perd un point\n", ( * client).pseudo);
+          ( * client).score--;
+          broadCastMessage(retour);
+        }
       }
+      printf("%s a réagi en : %lf\n",( * client).pseudo, myTime);
+      printf("msg:%s\n", buffer);
     }
-    printf("%s a réagi en : %lf\n",( * client).pseudo, myTime);
-    printf("msg:%s\n", buffer);
     // broadCastMessage(retour);
   }
   close(sock);
@@ -371,9 +396,11 @@ void readFile(){
 }
 
 void playGame(){
+  gameStarted = 1;
   int scoreMax = 0;
   bool hasWinner = false;
   int questionsAsked[countNumberOfQuestions()];
+  initScore();
   char * suggestion;
   char retour[256];
   int i = 0;
@@ -410,6 +437,7 @@ void playGame(){
   }
   sleep(2);
   getWinner();
+  gameStarted = 0;
 }
 
 void printMenu(char mesg[256]) {

@@ -72,6 +72,7 @@ void clientAction(){
             diffns = 1000000000 - diffns;
         }
         sprintf(mesg ,"%d.%d||%s", (int) diff, (int) diffns, reponse);
+        //printf("%s\n", mesg);
         //puts(mesg);
     }
 
