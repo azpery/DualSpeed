@@ -1,4 +1,20 @@
-Quelle est la taille de la tour eiffel?|300m;1000m;45020
-quelle est la taille de ma télévision?|30cm;40cm;50cm
-quelle est la couleur du cheval blanc d'henry 4?|blanc;noir;vert;jaune
-quelle est la capitale de la france?|Paris;Bamako;Lima;Ouagadougou
+En quelle année François Mitterrand a-t-il été élu président de la République française ?|1981;1974;1976;1986
+Quand l'armistice de la seconde guerre mondiale a-t-elle été signée ?|Le 8 Mai 1945;Le 14 Juillet 1940;Le 11 Novembre 1945;Le 18 Juin 1940
+Avec quel instrument peut-on ouvrir une porte ?|Un rossignol;Un merle;Un pigeon;Un pinson
+Quel mot désigne l'élevage des oiseaux ?|L'aviculture;L'ostréiculture;La cuniculture;L'apiculture
+Quelle est la méthode basée sur la persuasion par la répétition ?|Coué;Cauet;Couderc;Courbet
+Avant 2003, les pays de Bosnie, Croatie, Slovénie, Macédoine, Monténégro et Serbie étaient regroupés sous le nom d'un Etat. De quel Etat s'agissait-il ?|Yougoslavie;Bulgarie;Tchécoslovaquie;Kosovo
+Comment appelle-t-on un mot construit sur la base des lettres d'un autre mot ?|Une anagramme;Un synonyme;Un lapsus;Un antonyme
+Comment s'appelle cette maladie infectieuse provoquée par le bacille de Koch ?|La tuberculose;La peste;La poliomyélite;La gale
+Quel est l'homme d'état créateur de l'Académie Française ?|Le cardinal de Richelieu;Louis IV;Henry IV;Le cardinal Mazarin
+Quel autre nom donne-t-on aux globules blancs ?|Leucocytes;Plaquettes;Triglycérides;Hématies
+Sous le règne de quel roi, Colbert fut-il ministre des finances ?|Louis XIV;Louis XIII;Louis XV;Louis XVI
+Où se trouve le siège de l'UNESCO ?|Paris;Londres;New York;Genève
+Qui fut la première présidente du Parlement européen ?|Simone VEIL;Edith CRESSON;Margaret THATCHER;Aucune femme n'a occupé ce poste
+Le saturnisme est une maladie due à une intoxication au :|Plomb;Fer;Cuivre;Aluminium
+Quelle ville française n'est pas située sur le Rhône ?|Grenoble;Avignon;Lyon;Vienne
+A quelle distance approximative correspond un degré de latitude terrestre ?|111 km;62 km;8 km;34 km
+Lequel de ces fleuves ne coule pas en Russie ?|La Vistule;La Volga;L'Ienisseï;L'Ob
+Quel département n'est pas frontalier avec l'Italie ?|Le Vaucluse;Les Alpes-de-Haute-Provence;Les Hautes-Alpes;La Haute-Savoie
+Quelle est la devise de l'Union européenne ?|Unis dans la diversité;Un pour tous, tous pour un;Liberté, égalité, fraternité;L'union fait la force
+Que désigne le terme "mandarin" ?|Un fonctionnaire de l'empire chinois;Un fruit;Un instrument de musique;Un mammifère marin

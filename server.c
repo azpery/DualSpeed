@@ -23,9 +23,9 @@ typedef struct servent servent;
 
 typedef struct {
   int id;   //Numéro de quesiton
-  char question[256]; //Question posée
-  char rep[256]; // Réponse correct
-  char sugg[4][256]; //Tableau de toute les suggestions
+  char question[1024]; //Question posée
+  char rep[1024]; // Réponse correct
+  char sugg[4][1024]; //Tableau de toute les suggestions
 }
 Question;
 
@@ -228,6 +228,9 @@ void getWinner(){
   int i = 0;
   for (i; i < sizeof(threads) / sizeof(threads[0]); ++i) {
     if (threads[i].connected == 1) {
+      if(win.sock == 1){
+        win = threads[i];
+      }
       if ( threads[i].score > win.score)
       {
         win = threads[i];
@@ -376,11 +379,13 @@ void playGame(){
   int i = 0;
   int j = 0;
   int ok = 0;
-  for (i; i < countNumberOfQuestions(); i++){
-    if (getMaxScore() >= 5)
-    {
-      break;
-    }
+  int nbLoop = 0;
+  if(countNumberOfQuestions() > 5){
+    nbLoop = 5;
+  }else{
+    nbLoop = countNumberOfQuestions();
+  }
+  for (i; i < nbLoop; i++){
     currentQuestion = getRandomQuestion(questionsAsked, i);
     ok = broadCastMessage(currentQuestion.question);
     sleep(1);
@@ -475,19 +480,25 @@ main(int argc, char * * argv) {
   hostent * ptr_hote; /* les infos recuperees sur la machine hote */
   servent * ptr_service; /* les infos recuperees sur le service de la machine */
   char machine[TAILLE_MAX_NOM + 1]; /* nom de la machine locale */
+  int port;
   gethostname(machine, TAILLE_MAX_NOM); /* recuperation du nom de la machine */
   /* recuperation de la structure d'adresse en utilisant le nom */
   if ((ptr_hote = gethostbyname(machine)) == NULL) {
     perror("erreur : impossible de trouver le serveur a partir de son nom.");
     exit(1);
   }
+  if (argc != 2) {
+    perror("usage : serveur <port>");
+    exit(1);
+  }
+  port = atoi(argv[1]);
   /* initialisation de la structure adresse_locale avec les infos recuperees */
 
   /* copie de ptr_hote vers adresse_locale */
   bcopy((char *)ptr_hote->h_addr, (char * ) & adresse_locale.sin_addr, ptr_hote->h_length);
   adresse_locale.sin_family = ptr_hote->h_addrtype; /* ou AF_INET */
   adresse_locale.sin_addr.s_addr = INADDR_ANY; /* ou AF_INET */
-  adresse_locale.sin_port = htons(5001);
+  adresse_locale.sin_port = htons(port);
   printf("numero de port pour la connexion au serveur : %d \n",
     ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/ );
   /* creation de la socket */

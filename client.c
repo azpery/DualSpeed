@@ -97,14 +97,16 @@ int main(int argc, char * * argv) {
   char buffer[256];
   char * prog; /* nom du programme */
   char * host; /* nom de la machine distante */
+  int port;
 
-  if (argc != 2) {
-    perror("usage : client <adresse-serveur>");
+  if (argc != 3) {
+    perror("usage : clienclientt <adresse-serveur> <port>");
     exit(1);
   }
 
   prog = argv[0];
   host = argv[1];
+  port = atoi(argv[2]);
 
   printf("nom de l'executable : %s \n", prog);
   printf("adresse du serveur  : %s \n", host);
@@ -118,7 +120,7 @@ int main(int argc, char * * argv) {
   bcopy((char * ) ptr_host->h_addr, (char * ) & adresse_locale.sin_addr, ptr_host->h_length);
   adresse_locale.sin_family = AF_INET; /* ou ptr_host->h_addrtype; */
 
-  adresse_locale.sin_port = htons(5001);
+  adresse_locale.sin_port = htons(port);
   /*-----------------------------------------------------------*/
 
   printf("numero de port pour la connexion au serveur : %d \n", ntohs(adresse_locale.sin_port));
